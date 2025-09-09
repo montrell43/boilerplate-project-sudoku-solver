@@ -3,6 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const apiRoutes = require('./routes/api');
+const fccTestingRoutes = require('./routes/fcctesting'); // <-- add
 const cors = require('cors');
 
 
@@ -11,6 +12,9 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/api', apiRoutes);
+app.use(express.urlencoded({ extended: true }));
+
+fccTestingRoutes(app); // <-- add this line
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));

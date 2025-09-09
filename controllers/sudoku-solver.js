@@ -15,14 +15,15 @@ class SudokuSolver {
   // Validate puzzle string
   validate(puzzleString) {
     if (puzzleString === undefined) return { error: 'Required field missing' };
-    if (puzzleString.length !== 81) return { error: 'Expected puzzle to be 81 characters long' };
     if (/[^1-9.]/.test(puzzleString)) return { error: 'Invalid characters in puzzle' };
+    if (puzzleString.length !== 81) return { error: 'Expected puzzle to be 81 characters long' };
     return { ok: true };
   }
 
   // Convert puzzle string -> 2D array board
   stringToBoard(puzzleString) {
     if (puzzleString.length !== 81) throw new Error('Puzzle string must be exactly 81 characters long');
+
     const board = [];
     for (let i = 0; i < 81; i += 9) board.push(puzzleString.slice(i, i + 9).split(''));
     return board;
@@ -30,16 +31,15 @@ class SudokuSolver {
 
   // Check row placement (ignores the target cell itself)
   checkRowPlacement(puzzleString, row, col, value) {
-    const r = typeof row === 'string' ? this.letterToRow(row) : row;
-    const c = col - 1;
-    const rowStart = r * 9;
-    for (let i = 0; i < 9; i++) {
-      const idx = rowStart + i;
-      if (i === c) continue; // ignore target cell
-      if (puzzleString[idx] === String(value)) return false;
-    }
-    return true;
+  const r = typeof row === 'string' ? this.letterToRow(row) : row;
+  const c = col - 1;
+  for (let i = 0; i < 9; i++) {
+    if (i === c) continue; // skip the target cell
+    if (puzzleString[r * 9 + i] === String(value)) return false;
   }
+  return true;
+}
+
 
   // Check column placement (ignores the target cell itself)
   checkColPlacement(puzzleString, row, col, value) {
@@ -58,6 +58,7 @@ class SudokuSolver {
     const c = col - 1;
     const startRow = Math.floor(r / 3) * 3;
     const startCol = Math.floor(c / 3) * 3;
+    
     for (let rr = 0; rr < 3; rr++) {
       for (let cc = 0; cc < 3; cc++) {
         const curRow = startRow + rr;
@@ -110,15 +111,29 @@ class SudokuSolver {
   }
 
   // completeSudoku: returns { error: ... } if invalid or unsolvable, otherwise returns solved string
-  completeSudoku(puzzleStr) {
-    const v = this.validate(puzzleStr);
-    if (v.error) return v; // keep exact error shape
+  // completeSudoku: returns { error: ... } if invalid or unsolvable,
+// otherwise returns solved puzzle string
+completeSudoku(puzzleStr) {
+  // Step 1: validate
+  const v = this.validate(puzzleStr);
+  if (v.error) return v; // keep exact error shape
 
-    const board = this.stringToBoard(puzzleStr);
-    const solvable = this.solve(board);
-    if (!solvable) return { error: 'Puzzle cannot be solved' };
-    return board.flat().join('');
+  // Step 2: convert to 2D board
+  let board;
+  try {
+    board = this.stringToBoard(puzzleStr);
+  } catch (err) {
+    return { error: 'Expected puzzle to be 81 characters long' };
   }
+
+  // Step 3: attempt to solve
+  const solvable = this.solve(board);
+  if (!solvable) return { error: 'Puzzle cannot be solved' };
+
+  // Step 4: flatten back to solved string
+  return board.flat().join('');
+}
+
 
   /*
     Flexible checkPlacement:
