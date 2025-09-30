@@ -6,78 +6,92 @@ module.exports = function (app) {
   const solver = new SudokuSolver();
 
   // POST /api/solve
-  app.route('/api/solve')
-    .post((req, res) => {
-      const puzzle = req.body.puzzle;
+  // POST /api/solve
+app.route('/api/solve')
+  .post((req, res) => {
+    const puzzle = req.body.puzzle;
 
-      if (puzzle === undefined) {
+    if (puzzle === undefined) {
+      return res.json({ error: 'Required field missing' });
+    }
+
+    // Validate puzzle
+    const validation = solver.validate(puzzle);
+    if (validation.error) {
+      // FCC expects **these exact messages**
+      if (validation.error === 'Expected puzzle to be 81 characters long') {
+        return res.json({ error: 'Expected puzzle to be 81 characters long' });
+      }
+      if (validation.error === 'Invalid characters in puzzle') {
+        return res.json({ error: 'Invalid characters in puzzle' });
+      }
+      if (validation.error === 'Required field missing') {
         return res.json({ error: 'Required field missing' });
       }
+      // fallback just in case
+      return res.json({ error: validation.error });
+    }
 
-      // validate characters and length using solver.validate
-      const v = solver.validate(puzzle);
-      if (v.error) {
-        // map validation errors to required messages
-        if (v.error === 'Expected puzzle to be 81 characters long') return res.json({ error: v.error });
-        if (v.error === 'Invalid characters in puzzle') return res.json({ error: v.error });
-        // fallback
-        return res.json({ error: v.error });
-      }
+    // Solve puzzle
+    const solution = solver.solve(puzzle);
 
-      const solution = solver.solve(puzzle);
-      if (typeof solution === 'object' && solution.error) {
-        return res.json({ error: solution.error });
-      }
-      return res.json({ solution });
-    });
+    if (solution && solution.error === 'Puzzle cannot be solved') {
+      // FCC expects this exact message
+      return res.json({ error: 'Puzzle cannot be solved' });
+    }
+
+    return res.json({ solution });
+  });
 
   // POST /api/check
-  app.route('/api/check')
-    .post((req, res) => {
-      const puzzle = req.body.puzzle;
-      const coordinate = req.body.coordinate;
-      const value = req.body.value;
+  // POST /api/check
+app.route('/api/check')
+  .post((req, res) => {
+    const { puzzle, coordinate, value } = req.body;
 
-      if (puzzle === undefined || coordinate === undefined || value === undefined) {
-        return res.json({ error: 'Required field(s) missing' });
+    // Check required fields
+    if (!puzzle || !coordinate || !value) {
+      return res.json({ error: 'Required field(s) missing' });
+    }
+
+    // Validate puzzle string
+    const validation = solver.validate(puzzle);
+    if (validation.error) {
+      if (validation.error === 'Expected puzzle to be 81 characters long') {
+        return res.json({ error: 'Expected puzzle to be 81 characters long' });
       }
-
-      // puzzle validation
-      const v = solver.validate(puzzle);
-      if (v.error) {
-        if (v.error === 'Expected puzzle to be 81 characters long') return res.json({ error: v.error });
-        if (v.error === 'Invalid characters in puzzle') return res.json({ error: v.error });
-        return res.json({ error: v.error });
+      if (validation.error === 'Invalid characters in puzzle') {
+        return res.json({ error: 'Invalid characters in puzzle' });
       }
+      return res.json({ error: validation.error });
+    }
 
-      // coordinate validation: letter A-I (case-insensitive) + number 1-9
-      if (!/^[A-Ia-i][1-9]$/.test(coordinate)) {
-        return res.json({ error: 'Invalid coordinate' });
-      }
+    // Validate coordinate: letter A-I + number 1-9
+    if (!/^[A-Ia-i][1-9]$/.test(coordinate)) {
+      return res.json({ error: 'Invalid coordinate' });
+    }
 
-      // value must be 1-9
-      if (!/^[1-9]$/.test(String(value))) {
-        return res.json({ error: 'Invalid value' });
-      }
+    // Validate value: 1-9
+    if (!/^[1-9]$/.test(String(value))) {
+      return res.json({ error: 'Invalid value' });
+    }
 
-      // map coordinate to row/col indices
-      const rowLetter = coordinate[0].toUpperCase();
-      const colNum = parseInt(coordinate[1], 10);
-      const rowIndex = rowLetter.charCodeAt(0) - 'A'.charCodeAt(0);
-      const colIndex = colNum - 1;
+    // Map coordinate to row/col indices
+    const row = coordinate[0].toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
+    const col = parseInt(coordinate[1], 10) - 1;
 
-      // If the value is already placed on that coordinate and is not conflicting, return valid:true
-      // Use solver check functions
-      const conflicts = [];
+    // Check placement conflicts
+    const conflicts = [];
+    if (!solver.checkRowPlacement(puzzle, row, col, value)) conflicts.push('row');
+    if (!solver.checkColPlacement(puzzle, row, col, value)) conflicts.push('column');
+    if (!solver.checkRegionPlacement(puzzle, row, col, value)) conflicts.push('region');
 
-      if (!solver.checkRowPlacement(puzzle, rowIndex, colIndex, value)) conflicts.push('row');
-      if (!solver.checkColPlacement(puzzle, rowIndex, colIndex, value)) conflicts.push('column');
-      if (!solver.checkRegionPlacement(puzzle, rowIndex, colIndex, value)) conflicts.push('region');
+    // Return result in FCC format
+    if (conflicts.length === 0) {
+      return res.json({ valid: true });
+    } else {
+      return res.json({ valid: false, conflict: conflicts });
+    }
+  });
 
-      if (conflicts.length === 0) {
-        return res.json({ valid: true });
-      } else {
-        return res.json({ valid: false, conflict: conflicts });
-      }
-    });
 };
