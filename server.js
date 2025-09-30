@@ -1,39 +1,56 @@
-'use strict';
+require('dotenv').config();
+const express     = require('express');
+const bodyParser  = require('body-parser');
+const expect      = require('chai').expect;
+const cors        = require('cors');
 
-const express = require('express');
-const cors = require('cors');
-const apiRoutes = require('./routes/api');
+const fccTestingRoutes  = require('./routes/fcctesting.js');
+const apiRoutes         = require('./routes/api.js');
+const runner            = require('./test-runner');
 
 const app = express();
 
-app.use(cors({ origin: '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use('/public', express.static(process.cwd() + '/public'));
+app.use(cors({origin: '*'})); //For FCC testing purposes only
 
-app.use('/api', apiRoutes);
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
-  res.send('<h1>Sudoku Solver API</h1><p>Use the FCC tester to run tests.</p>');
+//Index page (static HTML)
+app.route('/')
+  .get(function (req, res) {
+    res.sendFile(process.cwd() + '/views/index.html');
+  });
+
+//For FCC testing purposes
+fccTestingRoutes(app);
+
+// User routes
+apiRoutes(app);
+    
+//404 Not Found Middleware
+app.use(function(req, res, next) {
+  res.status(404)
+    .type('text')
+    .send('Not Found');
 });
 
-// FCC test runner (optional)
-if (process.env.NODE_ENV === 'test') {
-  try {
-    const runner = require('./_fcc/test-runner');
-    if (runner && runner.report) {
-      app.get('/_api/get-tests', (req, res) => res.json(runner.report));
-    }
-  } catch {
-    console.warn('FCC test runner not found, skipping...');
+//Start our server and tests!
+const PORT = process.env.PORT || 3000
+app.listen(PORT, function () {
+  console.log("Listening on port " + PORT);
+  // process.env.NODE_ENV='test'
+  if (process.env.NODE_ENV==='test') {
+    console.log('Running Tests...');
+    setTimeout(function () {
+      try {
+        runner.run();
+      } catch (error) {
+        console.log('Tests are not valid:');
+        console.error(error);
+      }
+    }, 1500);
   }
-}
+});
 
-const PORT = process.env.PORT || 3000;
-if (!module.parent) {
-  app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
-    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
-  });
-}
-
-module.exports = app;
+module.exports = app; // for testing
