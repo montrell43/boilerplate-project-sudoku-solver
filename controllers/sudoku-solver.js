@@ -120,6 +120,58 @@ class SudokuSolver {
     if (!backtrack()) return { error: 'Puzzle cannot be solved' };
     return this._gridToString(grid);
   }
+
+  // inside SudokuSolver class
+
+/**
+ * Flexible checkPlacement:
+ * Accepts either (puzzleString, coordinate, value)
+ * Or (puzzleString, rowIndex, colIndex, value)
+ * Returns FCC test shapes:
+ *  - { error: '...' } on invalid input
+ *  - { valid: true } or { valid: false, conflict: [...] }
+ */
+checkPlacement(puzzleString, rowOrCoord, colOrValue, maybeValue) {
+  // Validate puzzle string first
+  const validation = this.validate(puzzleString);
+  if (validation.error) return { error: validation.error };
+
+  let row, col, value;
+
+  if (maybeValue === undefined) {
+    // called as (puzzleString, coordinate, value)
+    const coordinate = rowOrCoord;
+    row = coordinate[0].toUpperCase();
+    col = parseInt(coordinate[1], 10);
+    value = String(colOrValue);
+  } else {
+    // called as (puzzleString, rowIndex, colIndex, value)
+    row = rowOrCoord;
+    col = colOrValue;
+    value = String(maybeValue);
+  }
+
+  // Validate row/col/value
+  if (!row || !/[A-I]/.test(row) || !Number.isInteger(col) || col < 1 || col > 9) {
+    return { error: 'Invalid coordinate' };
+  }
+  if (!/^[1-9]$/.test(value)) {
+    return { error: 'Invalid value' };
+  }
+
+  // Convert row letter to index and column to 0-based
+  const rowIndex = row.charCodeAt(0) - 'A'.charCodeAt(0);
+  const colIndex = col - 1;
+
+  const conflicts = [];
+
+  if (!this.checkRowPlacement(puzzleString, rowIndex, colIndex, value)) conflicts.push('row');
+  if (!this.checkColPlacement(puzzleString, rowIndex, colIndex, value)) conflicts.push('column');
+  if (!this.checkRegionPlacement(puzzleString, rowIndex, colIndex, value)) conflicts.push('region');
+
+  return conflicts.length ? { valid: false, conflict: conflicts } : { valid: true };
+}
+
 }
 
 module.exports = SudokuSolver;
