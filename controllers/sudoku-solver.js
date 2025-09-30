@@ -71,7 +71,13 @@ class SudokuSolver {
   }
 
   // Solve board (backtracking). Returns true if solved, false if unsolvable.
-  solve(board) {
+  solve(input) {
+  let board = Array.isArray(input) ? input : this.stringToBoard(input);
+
+for (let r = 0; r < board.length; r++) {
+      if (typeof board[r] === 'string') board[r] = board[r].split('');
+    }
+
     const isValid = (board, row, col, num) => {
       const s = String(num);
       // row
@@ -128,7 +134,7 @@ completeSudoku(puzzleStr) {
 
   // Step 3: attempt to solve
   const solvable = this.solve(board);
-  if (!solvable) return { error: 'Puzzle cannot be solved' };
+  if (!solvable) return resizeBy.json({ error: 'Puzzle cannot be solved' });
 
   // Step 4: flatten back to solved string
   return board.flat().join('');

@@ -1,22 +1,39 @@
 'use strict';
 
 const express = require('express');
-const bodyParser = require('body-parser');
-const apiRoutes = require('./routes/api');
-const fccTestingRoutes = require('./routes/fcctesting'); // <-- add
 const cors = require('cors');
-
+const apiRoutes = require('./routes/api');
 
 const app = express();
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use('/api', apiRoutes);
+app.use(cors({ origin: '*' }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-fccTestingRoutes(app); // <-- add this line
+app.use('/api', apiRoutes);
+
+app.get('/', (req, res) => {
+  res.send('<h1>Sudoku Solver API</h1><p>Use the FCC tester to run tests.</p>');
+});
+
+// FCC test runner (optional)
+if (process.env.NODE_ENV === 'test') {
+  try {
+    const runner = require('./_fcc/test-runner');
+    if (runner && runner.report) {
+      app.get('/_api/get-tests', (req, res) => res.json(runner.report));
+    }
+  } catch {
+    console.warn('FCC test runner not found, skipping...');
+  }
+}
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+if (!module.parent) {
+  app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`);
+    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+  });
+}
 
-module.exports = app; // For FCC testing
+module.exports = app;
