@@ -1,56 +1,97 @@
-require('dotenv').config();
-const express     = require('express');
-const bodyParser  = require('body-parser');
-const expect      = require('chai').expect;
-const cors        = require('cors');
+'use strict';
 
-const fccTestingRoutes  = require('./routes/fcctesting.js');
-const apiRoutes         = require('./routes/api.js');
-const runner            = require('./test-runner');
+const express = require('express');
+const bodyParser = require('body-parser');
+const SudokuSolver = require('./controllers/sudoku-solver.js');
 
 const app = express();
-
-app.use('/public', express.static(process.cwd() + '/public'));
-app.use(cors({origin: '*'})); //For FCC testing purposes only
+const solver = new SudokuSolver();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-//Index page (static HTML)
-app.route('/')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/index.html');
-  });
+// POST /api/solve
+app.post('/api/solve', (req, res) => {
+  const puzzle = req.body.puzzle;
 
-//For FCC testing purposes
-fccTestingRoutes(app);
+  // Required field check
+  if (!puzzle) return res.json({ error: 'Required field missing' });
 
-// User routes
-apiRoutes(app);
-    
-//404 Not Found Middleware
-app.use(function(req, res, next) {
-  res.status(404)
-    .type('text')
-    .send('Not Found');
+  // Validate puzzle string
+  const validation = solver.validate(puzzle);
+  if (validation.error) {
+    if (validation.error === 'Expected puzzle to be 81 characters long') {
+      return res.json({ error: 'Expected puzzle to be 81 characters long' });
+    }
+    if (validation.error === 'Invalid characters in puzzle') {
+      return res.json({ error: 'Invalid characters in puzzle' });
+    }
+    return res.json({ error: validation.error });
+  }
+
+  // Solve puzzle
+  const solution = solver.solve(puzzle);
+  if (typeof solution === 'object' && solution.error) {
+    return res.json({ error: solution.error });
+  }
+
+  return res.json({ solution });
 });
 
-//Start our server and tests!
-const PORT = process.env.PORT || 3000
-app.listen(PORT, function () {
-  console.log("Listening on port " + PORT);
-  // process.env.NODE_ENV='test'
-  if (process.env.NODE_ENV==='test') {
-    console.log('Running Tests...');
-    setTimeout(function () {
-      try {
-        runner.run();
-      } catch (error) {
-        console.log('Tests are not valid:');
-        console.error(error);
-      }
-    }, 1500);
+// POST /api/check
+app.post('/api/check', (req, res) => {
+  const { puzzle, coordinate, value } = req.body;
+
+  // Required fields
+  if (!puzzle || !coordinate || !value) {
+    return res.json({ error: 'Required field(s) missing' });
+  }
+
+  // Validate puzzle
+  const validation = solver.validate(puzzle);
+  if (validation.error) {
+    if (validation.error === 'Expected puzzle to be 81 characters long') {
+      return res.json({ error: 'Expected puzzle to be 81 characters long' });
+    }
+    if (validation.error === 'Invalid characters in puzzle') {
+      return res.json({ error: 'Invalid characters in puzzle' });
+    }
+    return res.json({ error: validation.error });
+  }
+
+  // Validate coordinate
+  if (!/^[A-Ia-i][1-9]$/.test(coordinate)) {
+    return res.json({ error: 'Invalid coordinate' });
+  }
+
+  // Validate value
+  if (!/^[1-9]$/.test(String(value))) {
+    return res.json({ error: 'Invalid value' });
+  }
+
+  // Map coordinate to row/col indices
+  const row = coordinate[0].toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
+  const col = parseInt(coordinate[1], 10) - 1;
+
+  // Check for conflicts
+  const conflicts = [];
+  
+  if (!solver.checkRowPlacement(puzzle, row, col, value)) conflicts.push('row');
+  if (!solver.checkColPlacement(puzzle, row, col, value)) conflicts.push('column');
+  if (!solver.checkRegionPlacement(puzzle, row, col, value)) conflicts.push('region');
+
+  if (conflicts.length === 0) {
+    return res.json({ valid: true });
+  } else {
+    return res.json({ valid: false, conflict: conflicts });
   }
 });
 
-module.exports = app; // for testing
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Sudoku Solver API listening on port ${PORT}`);
+});
+
+module.exports = app;
