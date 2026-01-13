@@ -6,7 +6,7 @@ const errorMsg = document.getElementById("error");
 // ✅ Set backend URL: auto-switch between localhost and deployed Render URL
 const BASE_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:3000"
-  : "https://your-render-url.onrender.com"; // <-- replace with your Render URL
+  : "https://boilerplate-project-sudoku-solver-1-ir22.onrender.com"; // <-- replace with your Render URL
 
 // Fill initial puzzle on page load
 document.addEventListener("DOMContentLoaded", () => {
