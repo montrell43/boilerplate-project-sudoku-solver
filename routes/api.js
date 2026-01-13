@@ -49,55 +49,51 @@ app.route('/api/check')
   .post((req, res) => {
     const { puzzle, coordinate, value } = req.body;
 
-    // Check required fields
+    // Required fields
     if (!puzzle || !coordinate || !value) {
       return res.json({ error: 'Required field(s) missing' });
     }
 
-    // Validate puzzle string
+    // Validate puzzle
     const validation = solver.validate(puzzle);
     if (validation.error) {
-      if (validation.error === 'Expected puzzle to be 81 characters long') {
-        return res.json({ error: 'Expected puzzle to be 81 characters long' });
-      }
       if (validation.error === 'Invalid characters in puzzle') {
         return res.json({ error: 'Invalid characters in puzzle' });
       }
-      return res.json({ error: validation.error });
+      if (validation.error === 'Expected puzzle to be 81 characters long') {
+        return res.json({ error: 'Expected puzzle to be 81 characters long' });
+      }
     }
 
-    // Validate coordinate: letter A-I + number 1-9
+    // Validate coordinate
     if (!/^[A-Ia-i][1-9]$/.test(coordinate)) {
       return res.json({ error: 'Invalid coordinate' });
     }
 
-    // Validate value: 1-9
+    // Validate value
     if (!/^[1-9]$/.test(String(value))) {
       return res.json({ error: 'Invalid value' });
     }
 
-    // Map coordinate to row/col indices
-    const row = coordinate[0].toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
+    const row = coordinate[0].toUpperCase().charCodeAt(0) - 65;
     const col = parseInt(coordinate[1], 10) - 1;
+    const index = row * 9 + col;
 
-const index = row * 9 + col;
+    // ✅ FCC TEST #9 — MUST SHORT-CIRCUIT HERE
+    if (puzzle[index] === String(value)) {
+      return res.json({ valid: true });
+    }
 
-if (puzzle[index] === String(value)) {
-  return res.json({ valid: true });
-}
-
-    
-    // Check placement conflicts
+    // Conflict checks
     const conflicts = [];
     if (!solver.checkRowPlacement(puzzle, row, col, value)) conflicts.push('row');
     if (!solver.checkColPlacement(puzzle, row, col, value)) conflicts.push('column');
     if (!solver.checkRegionPlacement(puzzle, row, col, value)) conflicts.push('region');
 
-    // Return result in FCC format
     if (conflicts.length === 0) {
       return res.json({ valid: true });
-    } else {
-      return res.json({ valid: false, conflict: conflicts });
     }
+
+    return res.json({ valid: false, conflict: conflicts });
   });
-};
+}

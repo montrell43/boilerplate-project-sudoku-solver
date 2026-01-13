@@ -11,6 +11,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
 
+app.get('/_api/get-tests', (req, res) => {
+  res.json({});
+});
+
+
 // POST /api/solve
 app.post('/api/solve', (req, res) => {
   const puzzle = req.body.puzzle;
