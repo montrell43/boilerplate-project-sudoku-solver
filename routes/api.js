@@ -49,12 +49,10 @@ app.route('/api/check')
   .post((req, res) => {
     const { puzzle, coordinate, value } = req.body;
 
-    // Required fields
     if (!puzzle || !coordinate || !value) {
       return res.json({ error: 'Required field(s) missing' });
     }
 
-    // Validate puzzle
     const validation = solver.validate(puzzle);
     if (validation.error) {
       if (validation.error === 'Invalid characters in puzzle') {
@@ -65,12 +63,10 @@ app.route('/api/check')
       }
     }
 
-    // Validate coordinate
     if (!/^[A-Ia-i][1-9]$/.test(coordinate)) {
       return res.json({ error: 'Invalid coordinate' });
     }
 
-    // Validate value
     if (!/^[1-9]$/.test(String(value))) {
       return res.json({ error: 'Invalid value' });
     }
@@ -79,12 +75,11 @@ app.route('/api/check')
     const col = parseInt(coordinate[1], 10) - 1;
     const index = row * 9 + col;
 
-    // ✅ FCC TEST #9 — MUST SHORT-CIRCUIT HERE
+    // ✅ FCC TEST #9 — HARD SHORT-CIRCUIT
     if (puzzle[index] === String(value)) {
       return res.json({ valid: true });
     }
 
-    // Conflict checks
     const conflicts = [];
     if (!solver.checkRowPlacement(puzzle, row, col, value)) conflicts.push('row');
     if (!solver.checkColPlacement(puzzle, row, col, value)) conflicts.push('column');
@@ -96,4 +91,5 @@ app.route('/api/check')
 
     return res.json({ valid: false, conflict: conflicts });
   });
+
 }
