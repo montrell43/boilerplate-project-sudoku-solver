@@ -11,10 +11,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
 
-app.get('/_api/get-tests', (req, res) => {
-  res.json([]);
-});
-
 
 // POST /api/solve
 app.post('/api/solve', (req, res) => {
@@ -93,6 +89,9 @@ app.post('/api/check', (req, res) => {
   }
 });
 
+app.get('/_api/get-tests', (req, res) => {
+  res.json([]);
+});
 
 // Start server
 const PORT = process.env.PORT || 3000;
