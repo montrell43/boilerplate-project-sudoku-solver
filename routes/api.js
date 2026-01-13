@@ -80,6 +80,12 @@ app.route('/api/check')
     const row = coordinate[0].toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
     const col = parseInt(coordinate[1], 10) - 1;
 
+const index = row * 9 + col;
+
+if (puzzle[index] === value) {
+  return res.json({ valid: true });
+}
+    
     // Check placement conflicts
     const conflicts = [];
     if (!solver.checkRowPlacement(puzzle, row, col, value)) conflicts.push('row');
