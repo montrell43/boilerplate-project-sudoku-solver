@@ -99,5 +99,4 @@ if (puzzle[index] === value) {
       return res.json({ valid: false, conflict: conflicts });
     }
   });
-
 };
