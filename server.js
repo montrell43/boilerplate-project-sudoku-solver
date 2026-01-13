@@ -3,12 +3,13 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const SudokuSolver = require('./controllers/sudoku-solver.js');
-
+const cors        = require('cors');
 const app = express();
 const solver = new SudokuSolver();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors({origin: '*'})); //For FCC testing purposes only
 
 // POST /api/solve
 app.post('/api/solve', (req, res) => {
