@@ -82,9 +82,10 @@ app.route('/api/check')
 
 const index = row * 9 + col;
 
-if (puzzle[index] === value) {
+if (puzzle[index] === String(value)) {
   return res.json({ valid: true });
 }
+
     
     // Check placement conflicts
     const conflicts = [];
