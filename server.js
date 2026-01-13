@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
 
 app.get('/_api/get-tests', (req, res) => {
-  res.json({});
+  res.json([]);
 });
 
 
