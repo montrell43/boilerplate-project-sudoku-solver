@@ -1,61 +1,94 @@
+'use strict';
+
 const textArea = document.getElementById("text-input");
 const coordInput = document.getElementById("coord");
 const valInput = document.getElementById("val");
 const errorMsg = document.getElementById("error");
+const cells = document.querySelectorAll(".sudoku-input");
 
-// ✅ Set backend URL: auto-switch between localhost and deployed Render URL
-const API_BASE =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000" // local backend
-    : "https://boilerplate-project-sudoku-solver-1-ir22.onrender.com"; // production backend
+// Automatically detect base URL
+const baseURL = window.location.origin;
 
-
-async function getSolved() {
-  const stuff = { puzzle: textArea.value };
-
-  const data = await fetch(`${API_BASE}/api/solve`, {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(stuff)
-  });
-
-  const parsed = await data.json();
-
-  if (parsed.error) {
-    errorMsg.innerHTML = `<code>${JSON.stringify(parsed, null, 2)}</code>`;
-    return;
+// Fill grid from textArea
+function fillPuzzle(data) {
+  for (let i = 0; i < 81; i++) {
+    const value = data[i] && data[i] !== "." ? data[i] : "";
+    if (cells[i]) cells[i].value = value;
   }
-
-  fillpuzzle(parsed.solution);
 }
 
+// Update textArea when grid changes (optional)
+function updateTextArea() {
+  let puzzle = "";
+  cells.forEach(cell => {
+    puzzle += cell.value || ".";
+  });
+  textArea.value = puzzle;
+}
 
+// Listen for changes in textArea and update grid
+textArea.addEventListener("input", () => {
+  const valueArray = textArea.value.split("").slice(0, 81);
+  fillPuzzle(valueArray);
+});
+
+// Optionally listen to each grid cell change
+cells.forEach((cell, idx) => {
+  cell.addEventListener("input", () => {
+    updateTextArea();
+  });
+});
+
+// Solve button
+async function getSolved() {
+  const payload = { puzzle: textArea.value };
+
+  try {
+    const res = await fetch(`${baseURL}/api/solve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      errorMsg.innerHTML = `<code>${data.error}</code>`;
+      return;
+    }
+
+    fillPuzzle(data.solution);
+    errorMsg.innerHTML = `<code>Sudoku solved!</code>`;
+  } catch (err) {
+    errorMsg.innerHTML = `<code>Server error: ${err.message}</code>`;
+  }
+}
+
+// Check button
 async function getChecked() {
-  const stuff = {
+  const payload = {
     puzzle: textArea.value,
     coordinate: coordInput.value,
-    value: valInput.value
+    value: valInput.value,
   };
 
-  const data = await fetch(`${API_BASE}/api/check`, {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(stuff)
-  });
-
-  const parsed = await data.json();
-  errorMsg.innerHTML = `<code>${JSON.stringify(parsed, null, 2)}</code>`;
+  try {
+    const res = await fetch(`${baseURL}/api/check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    errorMsg.innerHTML = `<code>${JSON.stringify(data, null, 2)}</code>`;
+  } catch (err) {
+    errorMsg.innerHTML = `<code>Server error: ${err.message}</code>`;
+  }
 }
-
-
 
 // Event listeners
 document.getElementById("solve-button").addEventListener("click", getSolved);
 document.getElementById("check-button").addEventListener("click", getChecked);
+
+// Initial grid fill
+document.addEventListener("DOMContentLoaded", () => {
+  fillPuzzle(textArea.value.split("").slice(0, 81));
+});
