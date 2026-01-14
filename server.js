@@ -3,6 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const SudokuSolver = require('./controllers/sudoku-solver.js');
+require('./routes/fcctesting.js')(app);
 const cors        = require('cors');
 const app = express();
 const solver = new SudokuSolver();
