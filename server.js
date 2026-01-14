@@ -4,12 +4,19 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const SudokuSolver = require('./controllers/sudoku-solver.js');
 const cors        = require('cors');
+const fcctesting = require('./routes/fcctesting.js');
 const app = express();
 const solver = new SudokuSolver();
+const PORT = process.env.PORT || 3000
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
+app.use(express.static('public'));
+
+fccTesting(app);
+
+apiRoutes(app);
 
 require('./routes/api.js')(app);
 require('./routes/fcctesting.js')(app);
@@ -96,7 +103,7 @@ app.get('/_api/get-tests', (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+//const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Sudoku Solver API listening on port ${PORT}`);
 });
