@@ -8,7 +8,7 @@ const API_BASE =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
     ? "http://localhost:3000" // local backend
-    : "https://your-render-url.onrender.com"; // production backend
+    : "https://boilerplate-project-sudoku-solver-1-ir22.onrender.com"; // production backend
 
 
 async function getSolved() {
