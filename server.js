@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const SudokuSolver = require('./controllers/sudoku-solver.js');
 const cors        = require('cors');
 const fcctesting = require('./routes/fcctesting.js');
+const apiRoutes = require('./routes/api.js')
 const app = express();
 const solver = new SudokuSolver();
 const PORT = process.env.PORT || 3000
@@ -14,7 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({origin: '*'})); //For FCC testing purposes only
 app.use(express.static('public'));
 
-fccTesting(app);
+fcctesting(app);
 
 apiRoutes(app);
 
