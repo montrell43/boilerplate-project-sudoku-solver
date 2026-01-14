@@ -19,9 +19,6 @@ fcctesting(app);
 
 apiRoutes(app);
 
-require('./routes/api.js')(app);
-require('./routes/fcctesting.js')(app);
-
 // POST /api/solve
 app.post('/api/solve', (req, res) => {
   const puzzle = req.body.puzzle;
@@ -84,6 +81,10 @@ app.post('/api/check', (req, res) => {
   // Map coordinate to row/col indices
   const row = coordinate[0].toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
   const col = parseInt(coordinate[1], 10) - 1;
+  const index = row * 9 + col;
+if (puzzle[index] === value) {
+  return res.json({ valid: true });
+}
 
   // Check for conflicts
   const conflicts = [];
@@ -99,9 +100,13 @@ app.post('/api/check', (req, res) => {
   }
 });
 
-app.get('/_api/get-tests', (req, res) => {
-  res.json([]);
+app.get('/_api/get-tests', (req, res, next) => {
+  if (process.env.NODE_ENV !== 'test') {
+    return res.json({ status: 'unavailable' });
+  }
+  next(); // let fcctesting routes handle the test array
 });
+
 
 // Start server
 //const PORT = process.env.PORT || 3000;
